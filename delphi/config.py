@@ -78,6 +78,13 @@ class Settings(BaseSettings):
     mock_noise: float = 0.9
     mock_herding: float = 0.35
     mock_anchoring: float = 0.4
+    # A per-QUESTION error shared by every member, and the most important knob of the five.
+    # Independent errors average away as sqrt(n) and correlated ones do not, so a mock with
+    # only independent noise makes a six-member panel look near-perfect: the first version
+    # scored a Brier of 0.0000, which exercises none of the gates and is not a panel anybody
+    # has ever operated. Real members share a base model, a prompt and a worldview, so their
+    # mistakes arrive together -- which is most of why swarms disappoint.
+    mock_common_bias: float = 1.15
 
 
 def get_settings(**overrides) -> Settings:

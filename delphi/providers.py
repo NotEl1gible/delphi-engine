@@ -100,9 +100,16 @@ class MockProvider:
             else:
                 signal = 0.5 + (a.question.outcome - 0.5) * s.mock_separation
                 z = logit(signal) * self._skill(a.agent_id)
+            # Shared first, independent second. The shared term survives pooling and the
+            # independent one does not, which is the whole reason a panel is worth less than
+            # its member count suggests.
+            common = random.Random(_seed("common", a.question.id, s.seed))
+            z += common.gauss(0.0, s.mock_common_bias)
             z += rng.gauss(0.0, s.mock_noise)
-            if a.evidence:
-                z *= 1.15                       # evidence sharpens a little, by construction
+            # Evidence deliberately does NOTHING here. An offline stub that sharpened the
+            # estimate would make the retrieval arm win in CI and lose in production, which
+            # is worse than having no arm: it would look like a measured result. The mock
+            # cannot speak to retrieval, and the report says so instead of pretending.
             if a.anchor is not None:
                 z = (1 - s.mock_anchoring) * z + s.mock_anchoring * logit(a.anchor)
         else:

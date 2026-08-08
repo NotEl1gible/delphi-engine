@@ -127,10 +127,40 @@ def paired_bootstrap(ps_a: list[float], ps_b: list[float], ys: list[int],
     deltas.sort()
     lo = deltas[int(0.025 * trials)]
     hi = deltas[min(trials - 1, int(0.975 * trials))]
+    below = sum(1 for d in deltas if d <= 0.0) / trials
+    above = sum(1 for d in deltas if d >= 0.0) / trials
     return {"delta": point, "lo": lo, "hi": hi, "n": n,
+            "p": min(1.0, 2 * min(below, above)),
             "verdict": "INCONCLUSIVE" if lo <= 0.0 <= hi
                        else ("b better" if point > 0 else "a better")}
 
 
-def fmt_delta(d: dict) -> str:
-    return f"{d['delta']:+.4f} [{d['lo']:+.4f}, {d['hi']:+.4f}]  {d['verdict']}"
+def holm(pvalues: list[float], alpha: float = 0.05) -> list[bool]:
+    """Holm-Bonferroni: which of a FAMILY of comparisons survive.
+
+    Not a formality. An ablation compares eight arms against one baseline at 95%, so roughly
+    one spurious winner per run is the expected behaviour of the procedure -- and one duly
+    appeared here, in an arm that was configurationally identical to the baseline and differed
+    only by random seed. Reporting each interval on its own would have shipped it as a result.
+
+    Holm is used rather than plain Bonferroni because it is uniformly more powerful at the
+    same family-wise error rate; there is no reason to pay for the difference.
+    """
+    order = sorted(range(len(pvalues)), key=lambda i: pvalues[i])
+    m = len(pvalues)
+    out = [False] * m
+    for rank, i in enumerate(order):
+        if pvalues[i] <= alpha / (m - rank):
+            out[i] = True
+        else:
+            break                              # Holm stops at the first failure
+    return out
+
+
+def fmt_delta(d: dict, survives: bool | None = None) -> str:
+    s = f"{d['delta']:+.4f} [{d['lo']:+.4f}, {d['hi']:+.4f}]  p={d['p']:.3f}  "
+    if survives is None:
+        return s + d["verdict"]
+    if d["verdict"] == "INCONCLUSIVE":
+        return s + "INCONCLUSIVE"
+    return s + (d["verdict"] if survives else "n.s. after Holm")
