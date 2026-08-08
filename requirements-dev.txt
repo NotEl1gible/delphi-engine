@@ -1,0 +1,7 @@
+-r requirements.txt
+pytest>=8
+hypothesis>=6.100         # property tests on the pooling and calibration maths
+fakeredis>=2.26           # the cache path without a container
+httpx>=0.28               # FastAPI TestClient
+ruff>=0.8
+mypy>=1.13

@@ -1,0 +1,18 @@
+# Every line here has a job in the README's dependency table. Nothing is present for the
+# sake of appearing on a stack list.
+langgraph>=1.2            # the panel is a graph: fan-out, fan-in, conditional stop edge
+litellm>=1.95             # one call across Anthropic / OpenAI / Groq
+pydantic>=2.10            # typed verdicts; no probability recovered by regex
+pydantic-settings>=2.10   # one settings object, dumped next to every run
+opentelemetry-sdk>=1.40   # per-agent per-round spans under GenAI semantic conventions
+opentelemetry-exporter-otlp>=1.40
+sqlalchemy>=2.0           # one DDL over SQLite and Postgres via .with_variant()
+psycopg[binary]>=3.2      # the Postgres driver CI actually exercises
+redis>=5.2                # agent-call cache, keyed per arm
+celery>=5.5               # a panel run takes minutes; retries and a concurrency cap
+fastapi>=0.115            # /forecast, /runs/{id}, /metrics
+uvicorn>=0.34
+tavily-python>=0.7        # evidence retrieval, and an ablation arm
+mlflow>=3.0               # one run per (arm, seed); the fitted calibrator as an artifact
+numpy>=2.0
+scipy>=1.14               # the calibrator fit
