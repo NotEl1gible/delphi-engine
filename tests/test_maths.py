@@ -14,9 +14,9 @@ from hypothesis import given
 from hypothesis import settings as hyp_settings
 from hypothesis import strategies as st
 
-from delphi import pooling as P
-from delphi.abstain import choose, curve
-from delphi.calibration import Isotonic, Platt, fit_calibrator, log_loss
+from debate import pooling as P
+from debate.abstain import choose, curve
+from debate.calibration import Isotonic, Platt, fit_calibrator, log_loss
 from evals import metrics as M
 
 probs = st.floats(min_value=0.0, max_value=1.0, allow_nan=False, allow_infinity=False)

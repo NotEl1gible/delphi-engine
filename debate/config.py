@@ -32,7 +32,7 @@ MODEL_CAPS: dict[str, dict] = {
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_prefix="DELPHI_", env_file=".env",
+    model_config = SettingsConfigDict(env_prefix="DEBATE_", env_file=".env",
                                       extra="ignore", protected_namespaces=())
 
     # --- panel shape -------------------------------------------------------
@@ -53,7 +53,7 @@ class Settings(BaseSettings):
     max_wrong_rate: float = 0.15
 
     # --- infrastructure ----------------------------------------------------
-    database_url: str = "sqlite:///delphi.db"
+    database_url: str = "sqlite:///debate.db"
     redis_url: str = "redis://localhost:6379/0"
     cache_enabled: bool = True
     celery_broker_url: str = "redis://localhost:6379/1"
@@ -62,7 +62,7 @@ class Settings(BaseSettings):
     mlflow_uri: str = "sqlite:///mlflow.db"    # MLflow 3.x refuses a bare ./mlruns
     otlp_endpoint: str = ""                    # e.g. http://localhost:3000/api/public/otel
     otlp_headers: str = ""
-    service_name: str = "delphi-engine"
+    service_name: str = "llm-debate-engine"
 
     # --- keys (never written to disk by this project) ----------------------
     anthropic_api_key: str = ""

@@ -36,7 +36,7 @@ class Tracing:
     def __init__(self, provider: TracerProvider):
         self.provider = provider
 
-    def tracer(self, name: str = "delphi"):
+    def tracer(self, name: str = "debate"):
         return self.provider.get_tracer(name)
 
     def shutdown(self) -> None:
@@ -49,22 +49,22 @@ class Tracing:
             span.set_attribute(GEN_AI["operation"], "chat")
             span.set_attribute(GEN_AI["system"], system)
             span.set_attribute(GEN_AI["model"], model)
-            span.set_attribute("delphi.round", round)
-            span.set_attribute("delphi.agent_id", agent_id)
-            span.set_attribute("delphi.persona", persona)
-            span.set_attribute("delphi.arm", arm)
+            span.set_attribute("debate.round", round)
+            span.set_attribute("debate.agent_id", agent_id)
+            span.set_attribute("debate.persona", persona)
+            span.set_attribute("debate.arm", arm)
             yield span
 
 
 def record_usage(span, usage, probability: float | None = None) -> None:
     span.set_attribute(GEN_AI["tokens_in"], usage.tokens_in)
     span.set_attribute(GEN_AI["tokens_out"], usage.tokens_out)
-    span.set_attribute("delphi.usd", usage.usd)
-    span.set_attribute("delphi.cached", usage.cached)
+    span.set_attribute("debate.usd", usage.usd)
+    span.set_attribute("debate.cached", usage.cached)
     if probability is not None:
-        span.set_attribute("delphi.probability", probability)
+        span.set_attribute("debate.probability", probability)
     if usage.error:
-        span.set_attribute("delphi.error", usage.error)
+        span.set_attribute("debate.error", usage.error)
 
 
 def build(s: Settings, exporter=None) -> Tracing:

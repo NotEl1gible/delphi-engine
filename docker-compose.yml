@@ -10,11 +10,11 @@ services:
   postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: delphi
-      POSTGRES_PASSWORD: delphi
-      POSTGRES_DB: delphi
+      POSTGRES_USER: debate
+      POSTGRES_PASSWORD: debate
+      POSTGRES_DB: debate
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U delphi"]
+      test: ["CMD-SHELL", "pg_isready -U debate"]
       interval: 5s
       timeout: 3s
       retries: 10
@@ -38,7 +38,7 @@ services:
       postgres:
         condition: service_healthy
     environment:
-      DATABASE_URL: postgresql://delphi:delphi@postgres:5432/delphi
+      DATABASE_URL: postgresql://debate:debate@postgres:5432/debate
       NEXTAUTH_URL: http://localhost:3000
       NEXTAUTH_SECRET: change-me-in-any-real-deployment
       SALT: change-me-too
@@ -55,15 +55,15 @@ services:
       redis:
         condition: service_healthy
     environment:
-      DELPHI_DATABASE_URL: postgresql+psycopg://delphi:delphi@postgres:5432/delphi
-      DELPHI_REDIS_URL: redis://redis:6379/0
-      DELPHI_CELERY_BROKER_URL: redis://redis:6379/1
-      DELPHI_CELERY_RESULT_BACKEND: redis://redis:6379/2
-      DELPHI_CELERY_EAGER: "false"
-      DELPHI_OTLP_ENDPOINT: http://langfuse:3000/api/public/otel/v1/traces
-      DELPHI_PROVIDER: ${DELPHI_PROVIDER:-mock}
-      DELPHI_ANTHROPIC_API_KEY: ${DELPHI_ANTHROPIC_API_KEY:-}
-      DELPHI_TAVILY_API_KEY: ${DELPHI_TAVILY_API_KEY:-}
+      DEBATE_DATABASE_URL: postgresql+psycopg://debate:debate@postgres:5432/debate
+      DEBATE_REDIS_URL: redis://redis:6379/0
+      DEBATE_CELERY_BROKER_URL: redis://redis:6379/1
+      DEBATE_CELERY_RESULT_BACKEND: redis://redis:6379/2
+      DEBATE_CELERY_EAGER: "false"
+      DEBATE_OTLP_ENDPOINT: http://langfuse:3000/api/public/otel/v1/traces
+      DEBATE_PROVIDER: ${DEBATE_PROVIDER:-mock}
+      DEBATE_ANTHROPIC_API_KEY: ${DEBATE_ANTHROPIC_API_KEY:-}
+      DEBATE_TAVILY_API_KEY: ${DEBATE_TAVILY_API_KEY:-}
     ports:
       - "8000:8000"
 
@@ -73,17 +73,17 @@ services:
       redis:
         condition: service_healthy
     environment:
-      DELPHI_DATABASE_URL: postgresql+psycopg://delphi:delphi@postgres:5432/delphi
-      DELPHI_REDIS_URL: redis://redis:6379/0
-      DELPHI_CELERY_BROKER_URL: redis://redis:6379/1
-      DELPHI_CELERY_RESULT_BACKEND: redis://redis:6379/2
-      DELPHI_CELERY_EAGER: "false"
-      DELPHI_OTLP_ENDPOINT: http://langfuse:3000/api/public/otel/v1/traces
-      DELPHI_PROVIDER: ${DELPHI_PROVIDER:-mock}
-      DELPHI_ANTHROPIC_API_KEY: ${DELPHI_ANTHROPIC_API_KEY:-}
+      DEBATE_DATABASE_URL: postgresql+psycopg://debate:debate@postgres:5432/debate
+      DEBATE_REDIS_URL: redis://redis:6379/0
+      DEBATE_CELERY_BROKER_URL: redis://redis:6379/1
+      DEBATE_CELERY_RESULT_BACKEND: redis://redis:6379/2
+      DEBATE_CELERY_EAGER: "false"
+      DEBATE_OTLP_ENDPOINT: http://langfuse:3000/api/public/otel/v1/traces
+      DEBATE_PROVIDER: ${DEBATE_PROVIDER:-mock}
+      DEBATE_ANTHROPIC_API_KEY: ${DEBATE_ANTHROPIC_API_KEY:-}
     # One worker process, one task at a time. A panel run is thirty-six sequential provider
     # calls, so concurrency here multiplies straight into the rate limit.
-    command: ["celery", "-A", "delphi.tasks", "worker", "--loglevel=info",
+    command: ["celery", "-A", "debate.tasks", "worker", "--loglevel=info",
               "--concurrency=1", "--prefetch-multiplier=1"]
 
 volumes:

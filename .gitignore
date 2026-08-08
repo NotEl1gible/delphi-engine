@@ -10,6 +10,6 @@ artifacts/*.json
 !artifacts/.gitkeep
 # Deterministic-provider runs are NOT committed. They are a harness demonstration, and a
 # reader who found them under runs/ next to a table in the README would reasonably take them
-# for results. `python -m delphi.cli ablate` regenerates every table in seconds. Live runs are
+# for results. `python -m debate.cli ablate` regenerates every table in seconds. Live runs are
 # committed explicitly, with the model id and date on every row.
 runs/

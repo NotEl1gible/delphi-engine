@@ -96,7 +96,7 @@ def build_graph(*, settings: Settings, provider, personas: list[Persona],
             verdict, usage = hit
         else:
             if tracing is not None:
-                with tracing.agent_span(name="delphi.agent", model=getattr(
+                with tracing.agent_span(name="debate.agent", model=getattr(
                         provider, "model", s.panel_model), system=provider.name,
                         round=ask.round, agent_id=ask.agent_id,
                         persona=ask.persona.id, arm=ask.arm) as span:

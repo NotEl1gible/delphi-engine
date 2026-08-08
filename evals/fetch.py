@@ -83,7 +83,7 @@ def stale(m: dict) -> bool:
 
 
 def _get(url: str) -> list[dict]:
-    req = urllib.request.Request(url, headers={"User-Agent": "delphi-engine/0.1"})
+    req = urllib.request.Request(url, headers={"User-Agent": "llm-debate-engine/0.1"})
     with urllib.request.urlopen(req, timeout=30) as r:
         return json.loads(r.read().decode("utf-8"))
 

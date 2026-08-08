@@ -14,13 +14,13 @@ import pytest
 from fastapi.testclient import TestClient
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
 
-from delphi import store, tracing
-from delphi.cache import Cache, key_of
-from delphi.config import get_settings
-from delphi.panel import forecast, make_personas
-from delphi.personas import PLANTED
-from delphi.providers import Ask, build_provider
-from delphi.schemas import Question
+from debate import store, tracing
+from debate.cache import Cache, key_of
+from debate.config import get_settings
+from debate.panel import forecast, make_personas
+from debate.personas import PLANTED
+from debate.providers import Ask, build_provider
+from debate.schemas import Question
 
 Q = Question(id="Q-test", text="Will the sample question resolve YES?",
              resolution_date="2026-09-01", outcome=1, split="dev")
@@ -110,8 +110,8 @@ def test_a_cache_hit_is_billed_at_zero_and_flagged(settings):
 def test_a_failed_call_is_never_cached(settings):
     import fakeredis
 
-    from delphi.providers import Usage
-    from delphi.schemas import AgentVerdict
+    from debate.providers import Usage
+    from debate.schemas import AgentVerdict
     people = make_personas(settings)
     cache = Cache(fakeredis.FakeRedis(), "m", 7)
     ask = Ask(question=Q, persona=people[0], agent_id="a0", round=0, prev=None, peers=[],
@@ -131,7 +131,7 @@ def test_every_agent_call_emits_one_genai_span(settings):
     for key in ("gen_ai.operation.name", "gen_ai.request.model",
                 "gen_ai.usage.input_tokens", "gen_ai.usage.output_tokens"):
         assert key in a, f"{key} missing: the trace is not GenAI-conventional"
-    assert {"delphi.round", "delphi.agent_id", "delphi.persona", "delphi.arm"} <= set(a)
+    assert {"debate.round", "debate.agent_id", "debate.persona", "debate.arm"} <= set(a)
 
 
 def test_span_tokens_reconcile_with_the_forecast(settings):
@@ -181,10 +181,10 @@ def test_planting_replaces_a_member_rather_than_adding_one(settings):
 
 # ---------------------------------------------------------------- api
 def test_the_api_serves_a_forecast_and_counts_it(settings, monkeypatch):
-    monkeypatch.setenv("DELPHI_PROVIDER", "mock")
-    monkeypatch.setenv("DELPHI_CELERY_EAGER", "true")
-    monkeypatch.setenv("DELPHI_CACHE_ENABLED", "false")
-    from delphi import api as api_mod
+    monkeypatch.setenv("DEBATE_PROVIDER", "mock")
+    monkeypatch.setenv("DEBATE_CELERY_EAGER", "true")
+    monkeypatch.setenv("DEBATE_CACHE_ENABLED", "false")
+    from debate import api as api_mod
     client = TestClient(api_mod.create_app())
     assert client.get("/health").json()["ok"] is True
     r = client.post("/forecast", json={"question": "Will this test pass?",
@@ -194,11 +194,11 @@ def test_the_api_serves_a_forecast_and_counts_it(settings, monkeypatch):
     assert body["status"] == "done"
     assert body["forecast"]["decision"] in ("forecast", "abstain")
     text = client.get("/metrics").text
-    assert "delphi_forecasts_total" in text and "# TYPE" in text
+    assert "debate_forecasts_total" in text and "# TYPE" in text
 
 
 def test_the_task_is_serialisable_json(settings):
-    from delphi.tasks import forecast_task
+    from debate.tasks import forecast_task
     out = forecast_task.run(Q.model_dump(), "panel", None, False, "designed", False,
                             {"provider": "mock", "cache_enabled": False})
     d = json.loads(out)

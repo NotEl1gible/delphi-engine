@@ -14,14 +14,14 @@ import json
 from dataclasses import dataclass
 from pathlib import Path
 
-from delphi.calibration import Calibrator, fit_calibrator
-from delphi.config import Settings
-from delphi.evidence import offline_evidence, search
-from delphi.panel import forecast as run_forecast
-from delphi.panel import snapshot_at
-from delphi.pooling import logit, sigmoid
-from delphi.providers import build_provider
-from delphi.schemas import Forecast, Question
+from debate.calibration import Calibrator, fit_calibrator
+from debate.config import Settings
+from debate.evidence import offline_evidence, search
+from debate.panel import forecast as run_forecast
+from debate.panel import snapshot_at
+from debate.pooling import logit, sigmoid
+from debate.providers import build_provider
+from debate.schemas import Forecast, Question
 
 from . import metrics as M
 

@@ -3,14 +3,14 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "delphi-engine"
+name = "llm-debate-engine"
 version = "0.1.0"
 description = "LLM Delphi panels with fitted calibration and the right to abstain"
 requires-python = ">=3.11"
 license = { text = "MIT" }
 
 [tool.setuptools]
-packages = ["delphi", "evals"]
+packages = ["debate", "evals"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

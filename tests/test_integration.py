@@ -13,22 +13,22 @@ import uuid
 
 import pytest
 
-from delphi import store
-from delphi.cache import Cache, key_of
-from delphi.config import get_settings
-from delphi.panel import forecast, make_personas
-from delphi.providers import Ask, build_provider
-from delphi.schemas import Question
+from debate import store
+from debate.cache import Cache, key_of
+from debate.config import get_settings
+from debate.panel import forecast, make_personas
+from debate.providers import Ask, build_provider
+from debate.schemas import Question
 
-PG = os.environ.get("DELPHI_TEST_POSTGRES_URL", "")
-RD = os.environ.get("DELPHI_TEST_REDIS_URL", "")
+PG = os.environ.get("DEBATE_TEST_POSTGRES_URL", "")
+RD = os.environ.get("DEBATE_TEST_REDIS_URL", "")
 # A broker with no worker behind it is not a broker test, it is a 120-second timeout. Set
 # only by the CI step that has actually started a worker first.
-BROKER = os.environ.get("DELPHI_TEST_BROKER_URL", "")
+BROKER = os.environ.get("DEBATE_TEST_BROKER_URL", "")
 
-pg_only = pytest.mark.skipif(not PG, reason="no DELPHI_TEST_POSTGRES_URL")
-redis_only = pytest.mark.skipif(not RD, reason="no DELPHI_TEST_REDIS_URL")
-worker_only = pytest.mark.skipif(not BROKER, reason="no live worker (DELPHI_TEST_BROKER_URL)")
+pg_only = pytest.mark.skipif(not PG, reason="no DEBATE_TEST_POSTGRES_URL")
+redis_only = pytest.mark.skipif(not RD, reason="no DEBATE_TEST_REDIS_URL")
+worker_only = pytest.mark.skipif(not BROKER, reason="no live worker (DEBATE_TEST_BROKER_URL)")
 
 Q = Question(id="Q-int", text="Will the integration job pass?", resolution_date="2026-09-01",
              outcome=1, split="dev")
@@ -83,8 +83,8 @@ def test_a_real_celery_worker_runs_the_task_through_the_broker():
     """
     import json
 
-    from delphi.tasks import app as celery_app
-    from delphi.tasks import forecast_task
+    from debate.tasks import app as celery_app
+    from debate.tasks import forecast_task
 
     # The task is already registered on the module-level app, which reads its broker from
     # the environment -- the same environment the worker was started in. Passing an app to
@@ -110,8 +110,8 @@ def test_a_real_celery_worker_runs_the_task_through_the_broker():
 def test_the_api_serves_a_forecast_against_the_real_services():
     from fastapi.testclient import TestClient
 
-    from delphi import api as api_mod
+    from debate import api as api_mod
     client = TestClient(api_mod.create_app())
     r = client.get("/health")
     assert r.status_code == 200 and r.json()["ok"] is True
-    assert "delphi_forecasts_total" in client.get("/metrics").text
+    assert "debate_forecasts_total" in client.get("/metrics").text

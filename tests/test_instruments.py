@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import pytest
 
-from delphi.config import get_settings
+from debate.config import get_settings
 from evals import instruments as I
 from evals import metrics as M
 

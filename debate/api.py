@@ -21,28 +21,28 @@ from .schemas import Forecast, ForecastRequest, Question
 from .tasks import build_app, forecast_task
 
 COUNTERS: dict[str, float] = {
-    "delphi_forecasts_total": 0.0,
-    "delphi_abstentions_total": 0.0,
-    "delphi_tokens_in_total": 0.0,
-    "delphi_tokens_out_total": 0.0,
-    "delphi_cost_usd_total": 0.0,
-    "delphi_rounds_total": 0.0,
+    "debate_forecasts_total": 0.0,
+    "debate_abstentions_total": 0.0,
+    "debate_tokens_in_total": 0.0,
+    "debate_tokens_out_total": 0.0,
+    "debate_cost_usd_total": 0.0,
+    "debate_rounds_total": 0.0,
 }
 
 
 def record(f: Forecast) -> None:
-    COUNTERS["delphi_forecasts_total"] += 1
-    COUNTERS["delphi_abstentions_total"] += 1 if f.decision == "abstain" else 0
-    COUNTERS["delphi_tokens_in_total"] += f.tokens_in
-    COUNTERS["delphi_tokens_out_total"] += f.tokens_out
-    COUNTERS["delphi_cost_usd_total"] += f.usd
-    COUNTERS["delphi_rounds_total"] += f.rounds_used
+    COUNTERS["debate_forecasts_total"] += 1
+    COUNTERS["debate_abstentions_total"] += 1 if f.decision == "abstain" else 0
+    COUNTERS["debate_tokens_in_total"] += f.tokens_in
+    COUNTERS["debate_tokens_out_total"] += f.tokens_out
+    COUNTERS["debate_cost_usd_total"] += f.usd
+    COUNTERS["debate_rounds_total"] += f.rounds_used
 
 
 def create_app() -> FastAPI:
     s = get_settings()
     celery = build_app(s)
-    api = FastAPI(title="delphi-engine",
+    api = FastAPI(title="llm-debate-engine",
                   description="LLM Delphi panels with fitted calibration and the right to "
                               "abstain.",
                   version="0.1.0")

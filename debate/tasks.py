@@ -24,7 +24,7 @@ from .config import Settings, get_settings
 
 def build_app(s: Settings | None = None) -> Celery:
     s = s or get_settings()
-    app = Celery("delphi", broker=s.celery_broker_url, backend=s.celery_result_backend)
+    app = Celery("debate", broker=s.celery_broker_url, backend=s.celery_result_backend)
     app.conf.update(
         task_always_eager=s.celery_eager,
         task_eager_propagates=True,
@@ -44,7 +44,7 @@ app = build_app()
 
 
 @app.task(bind=True, autoretry_for=(Exception,), retry_backoff=True, retry_jitter=True,
-          max_retries=3, name="delphi.forecast")
+          max_retries=3, name="debate.forecast")
 def forecast_task(self, question: dict, arm: str = "panel", anchor: float | None = None,
                   evidence: bool = False, roster_variant: str = "designed",
                   planted: bool = False, overrides: dict | None = None) -> str:

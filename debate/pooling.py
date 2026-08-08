@@ -13,7 +13,7 @@ at 0.9 pool to 0.9, and two agents at 0.9 and 0.99 pool to 0.9676, not to 0.945.
 
 Deliberately, this module does NOT extremise. A hand-chosen sharpening constant applied on
 top of the pool is a calibration parameter wearing a disguise, and it cannot be validated
-where it sits. All sharpening lives in `delphi.calibration`, where it is fitted on a dev split
+where it sits. All sharpening lives in `debate.calibration`, where it is fitted on a dev split
 and scored on a held-out test split.
 """
 from __future__ import annotations

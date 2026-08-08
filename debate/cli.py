@@ -144,7 +144,7 @@ def cmd_calibrate(a) -> int:
     try:
         import mlflow
         mlflow.set_tracking_uri(s.mlflow_uri)
-        mlflow.set_experiment("delphi-calibration")
+        mlflow.set_experiment("llm-debate-calibration")
         with mlflow.start_run(run_name=kind):
             mlflow.log_params({k: v for k, v in cal.params().items()
                                if k not in ("xs", "ys")})
@@ -297,7 +297,7 @@ def cmd_trace(a) -> int:
 
 # ----------------------------------------------------------------------------
 def main() -> None:
-    ap = argparse.ArgumentParser(prog="delphi", description=__doc__.split("\n")[0])
+    ap = argparse.ArgumentParser(prog="debate", description=__doc__.split("\n")[0])
     ap.add_argument("--provider", choices=["mock", "litellm"], default="mock")
     ap.add_argument("--model", default="")
     ap.add_argument("--agents", type=int, default=0)

@@ -1,6 +1,6 @@
-# delphi-engine
+# llm-debate-engine
 
-[![CI](https://github.com/NotEl1gible/delphi-engine/actions/workflows/ci.yml/badge.svg)](https://github.com/NotEl1gible/delphi-engine/actions/workflows/ci.yml)
+[![CI](https://github.com/NotEl1gible/llm-debate-engine/actions/workflows/ci.yml/badge.svg)](https://github.com/NotEl1gible/llm-debate-engine/actions/workflows/ci.yml)
 
 A binary question in, a **calibrated probability or an abstention** out.
 
@@ -8,8 +8,15 @@ A panel of LLM agents estimates independently, then runs controlled anonymous fe
 until it stops moving, then a premortem pass, then log-odds pooling, then a calibration map
 fitted on held-out data, then a disagreement gate that can refuse to answer.
 
+That protocol has a name — the **Delphi method** — and it is worth knowing because it explains
+every constraint in the design. Estimates are made in isolation before any member sees
+another's; feedback is **anonymised**; rounds continue until the panel settles rather than for
+a fixed count. Attach names to the estimates and it stops being Delphi and becomes a status
+contest, which is the failure the protocol was invented to remove. That is why the blind round
+is enforced by a graph barrier rather than by a convention (§*Stack*).
+
 ```bash
-$ python -m delphi.cli forecast "Will X happen by 2026-12-31?" --date 2026-12-31
+$ python -m debate.cli forecast "Will X happen by 2026-12-31?" --date 2026-12-31
 
   round 0     pooled 0.463  spread 0.281  moved   --    [0.20, 0.51, 0.37, 0.45, 0.51, 0.75]
   round 1     pooled 0.446  spread 0.196  moved  0.068  [0.28, 0.43, 0.41, 0.51, 0.48, 0.58]
@@ -48,7 +55,7 @@ same numbers it is meant to improve. Here the identical transform is `sigmoid(A*
 with A and B fitted on a **dev split** and reported on a **test split the fit never saw**.
 
 ```
-$ python -m delphi.cli calibrate
+$ python -m debate.cli calibrate
 
   calibrator  params                              dev brier  test brier      gap
   identity    kind=identity                          0.0998      0.1038  +0.0040
@@ -123,7 +130,7 @@ arms perfectly paired and cuts the bill about threefold. The adaptive arm is der
 way: the stopping rule is a policy over rounds that already happened.
 
 ```
-$ python -m delphi.cli ablate
+$ python -m debate.cli ablate
 
   arm           brier     log    ece   null  rounds   vs round0 (paired bootstrap, Holm)
   market       0.1571  0.4524  0.139  0.174    0.00   +0.0649 [-0.1016,+0.2046] p=0.398 INCONCLUSIVE
@@ -168,7 +175,7 @@ The same question with no anchor, with 0.15, and with 0.85. The coefficient is a
 β = 1 means the forecast **is** the anchor.
 
 ```
-$ python -m delphi.cli anchor
+$ python -m debate.cli anchor
 
   anchoring coefficient beta = 0.419   median 0.406   [0.330, 0.572]  n=12
   mean absolute shift away from the unanchored forecast: 0.102
@@ -191,7 +198,7 @@ answers**, not on the pool: an extra extreme number drags any average by arithme
 a change in what the others say is conformity.
 
 ```
-$ python -m delphi.cli conform
+$ python -m debate.cli conform
 
   herding toward the group mean:  +0.372   (60 agent moves)
   pull toward the loud outlier:   +0.066
@@ -211,7 +218,7 @@ directions; the mean-of-ratios estimator read 0.250 against a configured 0.35.
 ## Instrument 4 — does the roster do any work
 
 ```
-$ python -m delphi.cli personas
+$ python -m debate.cli personas
 
   roster          brier   spread   |diff| vs designed   paired vs designed
   designed       0.0755    0.578                   --
@@ -301,7 +308,7 @@ is worse than a skip.
 ## Layout
 
 ```
-delphi/    config schemas providers personas pooling calibration abstain
+debate/    config schemas providers personas pooling calibration abstain
            graph panel evidence tracing store cache tasks api cli
 evals/     questions.jsonl fetch.py metrics.py instruments.py
 tests/     test_maths (Hypothesis) test_infra test_instruments test_integration
@@ -311,17 +318,17 @@ tests/     test_maths (Hypothesis) test_infra test_instruments test_integration
 pip install -r requirements-dev.txt
 pytest -q
 
-python -m delphi.cli forecast "Will X happen?" --date 2026-12-31
-python -m delphi.cli questions
-python -m delphi.cli ablate            # the round table, the A/A check and the gates
-python -m delphi.cli anchor            # release gate; needs no outcomes
-python -m delphi.cli conform           # persuasion vs herding
-python -m delphi.cli personas          # is the roster decoration
-python -m delphi.cli calibrate         # fit on dev, score on test, log to MLflow
-python -m delphi.cli trace --question Q-ICEldCd0nR
+python -m debate.cli forecast "Will X happen?" --date 2026-12-31
+python -m debate.cli questions
+python -m debate.cli ablate            # the round table, the A/A check and the gates
+python -m debate.cli anchor            # release gate; needs no outcomes
+python -m debate.cli conform           # persuasion vs herding
+python -m debate.cli personas          # is the roster decoration
+python -m debate.cli calibrate         # fit on dev, score on test, log to MLflow
+python -m debate.cli trace --question Q-ICEldCd0nR
 
 docker compose up            # postgres, redis, langfuse, api, worker
-DELPHI_PROVIDER=litellm python -m delphi.cli ablate     # the live run
+DEBATE_PROVIDER=litellm python -m debate.cli ablate     # the live run
 ```
 
 ## Limits, stated

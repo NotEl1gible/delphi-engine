@@ -26,8 +26,8 @@ jobs:
 
       - name: lint and type-check
         run: |
-          ruff check delphi evals tests
-          mypy delphi --ignore-missing-imports --no-strict-optional || true
+          ruff check debate evals tests
+          mypy debate --ignore-missing-imports --no-strict-optional || true
 
       - name: tests
         run: pytest -q
@@ -53,13 +53,13 @@ jobs:
 
       - name: the full pipeline on the deterministic provider, with its gates
         run: |
-          python -m delphi.cli forecast "Will CI pass?" --date 2026-12-31
-          python -m delphi.cli questions
-          python -m delphi.cli ablate --quiet
-          python -m delphi.cli anchor --quiet
-          python -m delphi.cli conform --quiet
-          python -m delphi.cli personas --quiet
-          python -m delphi.cli calibrate
+          python -m debate.cli forecast "Will CI pass?" --date 2026-12-31
+          python -m debate.cli questions
+          python -m debate.cli ablate --quiet
+          python -m debate.cli anchor --quiet
+          python -m debate.cli conform --quiet
+          python -m debate.cli personas --quiet
+          python -m debate.cli calibrate
 
   # ---------------------------------------------------------------------------
   # The claims the unit job cannot make. SQLAlchemy compiles BIGSERIAL, JSONB and
@@ -72,12 +72,12 @@ jobs:
       postgres:
         image: postgres:16
         env:
-          POSTGRES_USER: delphi
-          POSTGRES_PASSWORD: delphi
-          POSTGRES_DB: delphi
+          POSTGRES_USER: debate
+          POSTGRES_PASSWORD: debate
+          POSTGRES_DB: debate
         ports: ["5432:5432"]
         options: >-
-          --health-cmd "pg_isready -U delphi"
+          --health-cmd "pg_isready -U debate"
           --health-interval 5s --health-timeout 3s --health-retries 20
       redis:
         image: redis:7
@@ -86,8 +86,8 @@ jobs:
           --health-cmd "redis-cli ping"
           --health-interval 5s --health-timeout 3s --health-retries 20
     env:
-      DELPHI_TEST_POSTGRES_URL: postgresql+psycopg://delphi:delphi@localhost:5432/delphi
-      DELPHI_TEST_REDIS_URL: redis://localhost:6379/0
+      DEBATE_TEST_POSTGRES_URL: postgresql+psycopg://debate:debate@localhost:5432/debate
+      DEBATE_TEST_REDIS_URL: redis://localhost:6379/0
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -106,20 +106,20 @@ jobs:
       # of silently in production.
       - name: a real Celery worker drains a real queue
         env:
-          DELPHI_PROVIDER: mock
-          DELPHI_CACHE_ENABLED: "false"
-          DELPHI_CELERY_EAGER: "false"
-          DELPHI_CELERY_BROKER_URL: redis://localhost:6379/1
-          DELPHI_CELERY_RESULT_BACKEND: redis://localhost:6379/1
-          DELPHI_TEST_BROKER_URL: redis://localhost:6379/1
+          DEBATE_PROVIDER: mock
+          DEBATE_CACHE_ENABLED: "false"
+          DEBATE_CELERY_EAGER: "false"
+          DEBATE_CELERY_BROKER_URL: redis://localhost:6379/1
+          DEBATE_CELERY_RESULT_BACKEND: redis://localhost:6379/1
+          DEBATE_TEST_BROKER_URL: redis://localhost:6379/1
         run: |
-          celery -A delphi.tasks worker --loglevel=info --concurrency=1 \
+          celery -A debate.tasks worker --loglevel=info --concurrency=1 \
             --logfile=worker.log --detach --pidfile=worker.pid
           for i in $(seq 1 30); do
-            celery -A delphi.tasks inspect ping --timeout 3 >/dev/null 2>&1 && break
+            celery -A debate.tasks inspect ping --timeout 3 >/dev/null 2>&1 && break
             sleep 2
           done
-          celery -A delphi.tasks inspect ping --timeout 5
+          celery -A debate.tasks inspect ping --timeout 5
           pytest tests/test_integration.py -q -k worker || (cat worker.log && exit 1)
           test -f worker.pid && kill "$(cat worker.pid)" || true
 
@@ -133,19 +133,19 @@ jobs:
       - name: the compose file is valid
         run: docker compose config --quiet
       - name: the image builds
-        run: docker build -t delphi-engine:ci .
+        run: docker build -t llm-debate-engine:ci .
       - name: the image serves /health
         run: |
-          docker run -d --name delphi -p 8000:8000 \
-            -e DELPHI_PROVIDER=mock -e DELPHI_CELERY_EAGER=true \
-            -e DELPHI_CACHE_ENABLED=false delphi-engine:ci
+          docker run -d --name debate -p 8000:8000 \
+            -e DEBATE_PROVIDER=mock -e DEBATE_CELERY_EAGER=true \
+            -e DEBATE_CACHE_ENABLED=false llm-debate-engine:ci
           for i in $(seq 1 30); do
             if curl -sf http://localhost:8000/health; then ok=1; break; fi
             sleep 2
           done
-          test "${ok:-0}" = "1" || (docker logs delphi && exit 1)
+          test "${ok:-0}" = "1" || (docker logs debate && exit 1)
           curl -sf -X POST http://localhost:8000/forecast \
             -H 'content-type: application/json' \
             -d '{"question":"Will the container answer?","resolution_date":"2026-12-31"}' \
             | head -c 400
-          docker rm -f delphi
+          docker rm -f debate

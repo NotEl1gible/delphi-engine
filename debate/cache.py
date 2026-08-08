@@ -33,7 +33,7 @@ def key_of(ask: Ask, model: str, seed: int) -> str:
         "anchor": ask.anchor, "premortem": ask.premortem,
         "evidence": hashlib.sha256((ask.evidence or "").encode()).hexdigest()[:12],
     }
-    return "delphi:" + hashlib.sha256(
+    return "debate:" + hashlib.sha256(
         json.dumps(payload, sort_keys=True).encode()).hexdigest()[:32]
 
 

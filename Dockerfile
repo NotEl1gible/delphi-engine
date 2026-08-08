@@ -13,13 +13,13 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --upgrade pip && pip install -r requirements.txt
 
-COPY delphi ./delphi
+COPY debate ./debate
 COPY evals ./evals
 
 # Runs as a non-root user. A forecasting service has no reason to hold root, and the
 # container is the only place that is enforced.
-RUN useradd --create-home --uid 10001 delphi && chown -R delphi:delphi /app
-USER delphi
+RUN useradd --create-home --uid 10001 debate && chown -R debate:debate /app
+USER debate
 
 EXPOSE 8000
 
@@ -28,4 +28,4 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
     sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=2).status \
     == 200 else 1)"
 
-CMD ["uvicorn", "delphi.api:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "debate.api:app", "--host", "0.0.0.0", "--port", "8000"]
