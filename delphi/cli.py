@@ -8,7 +8,6 @@ that can fail.
 from __future__ import annotations
 
 import argparse
-import json
 import sys
 from pathlib import Path
 
@@ -18,7 +17,8 @@ from evals import metrics as M
 from .abstain import choose, curve
 from .calibration import Calibrator
 from .config import get_settings
-from .panel import forecast as run_forecast, snapshot_at
+from .panel import forecast as run_forecast
+from .panel import snapshot_at
 from .providers import build_provider
 from .schemas import Question
 

@@ -23,7 +23,7 @@ import random
 def brier(ps: list[float], ys: list[int]) -> float:
     if not ps:
         return 0.0
-    return sum((p - y) ** 2 for p, y in zip(ps, ys)) / len(ps)
+    return sum((p - y) ** 2 for p, y in zip(ps, ys, strict=True)) / len(ps)
 
 
 def log_score(ps: list[float], ys: list[int]) -> float:
@@ -32,7 +32,7 @@ def log_score(ps: list[float], ys: list[int]) -> float:
         return 0.0
     return -sum(y * math.log(min(max(p, eps), 1 - eps))
                 + (1 - y) * math.log(1 - min(max(p, eps), 1 - eps))
-                for p, y in zip(ps, ys)) / len(ps)
+                for p, y in zip(ps, ys, strict=True)) / len(ps)
 
 
 def wilson(k: int, n: int) -> tuple[float, float]:

@@ -12,10 +12,24 @@ integration job runs these statements against a real server for that reason.
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
-from sqlalchemy import (BigInteger, Boolean, Column, DateTime, Float, Integer, JSON,
-                        MetaData, String, Table, Text, create_engine, insert, select)
+from sqlalchemy import (
+    JSON,
+    BigInteger,
+    Boolean,
+    Column,
+    DateTime,
+    Float,
+    Integer,
+    MetaData,
+    String,
+    Table,
+    Text,
+    create_engine,
+    insert,
+    select,
+)
 from sqlalchemy.dialects.postgresql import JSONB, TIMESTAMP
 
 from .schemas import Forecast
@@ -94,7 +108,7 @@ def start_run(engine, *, run_id: str, arm: str, provider: str, model: str,
               settings: dict, n_questions: int, notes: str = "") -> str:
     with engine.begin() as conn:
         conn.execute(insert(runs).values(
-            id=run_id, created_at=datetime.now(timezone.utc), arm=arm, provider=provider,
+            id=run_id, created_at=datetime.now(UTC), arm=arm, provider=provider,
             model=model, n_questions=n_questions,
             settings=json.loads(json.dumps(settings, default=str)), notes=notes))
     return run_id

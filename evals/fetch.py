@@ -23,7 +23,7 @@ import argparse
 import json
 import re
 import urllib.request
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 API = "https://api.manifold.markets/v0/search-markets"
@@ -77,7 +77,7 @@ def stale(m: dict) -> bool:
     Three of these survived the first pass of the filter, which is exactly the kind of thing
     that would have quietly inflated every arm at once.
     """
-    ts = datetime.fromtimestamp(m["resolutionTime"] / 1000, tz=timezone.utc)
+    ts = datetime.fromtimestamp(m["resolutionTime"] / 1000, tz=UTC)
     years = [int(y) for y in YEARS.findall(m.get("question") or "")]
     return bool(years) and max(years) < ts.year
 
@@ -140,7 +140,7 @@ def select(rows: list[dict], n: int) -> list[dict]:
 
 
 def to_question(m: dict, split: str) -> dict:
-    ts = datetime.fromtimestamp(m["resolutionTime"] / 1000, tz=timezone.utc)
+    ts = datetime.fromtimestamp(m["resolutionTime"] / 1000, tz=UTC)
     return {
         "id": f"Q-{m['id'][:10]}",
         "text": m["question"].strip(),
@@ -187,7 +187,7 @@ def main() -> int:
                   f"{sub[0]['resolution_date']} .. {sub[-1]['resolution_date']}")
     base = [r["market_p"] for r in rows]
     ys = [r["outcome"] for r in rows]
-    brier = sum((p - y) ** 2 for p, y in zip(base, ys)) / len(rows)
+    brier = sum((p - y) ** 2 for p, y in zip(base, ys, strict=True)) / len(rows)
     print(f"\ncrowd baseline Brier on this set: {brier:.4f}   "
           f"(a constant 0.5 scores {sum((0.5 - y) ** 2 for y in ys) / len(rows):.4f})")
 

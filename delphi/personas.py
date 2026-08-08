@@ -65,7 +65,7 @@ def roster(variant: str = "designed", n: int | None = None) -> list[Persona]:
         # Same briefs, wrong labels: content preserved, naming broken. Isolates whether the
         # roster's value is the instructions or the role names.
         rot = base[1:] + base[:1]
-        return [Persona(p.id, q.label, p.brief) for p, q in zip(base, rot)]
+        return [Persona(p.id, q.label, p.brief) for p, q in zip(base, rot, strict=True)]
     raise ValueError(f"unknown roster variant {variant!r}")
 
 

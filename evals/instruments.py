@@ -11,15 +11,15 @@ cannot say".
 from __future__ import annotations
 
 import json
-import math
 from dataclasses import dataclass
 from pathlib import Path
 
 from delphi.calibration import Calibrator, fit_calibrator
-from delphi.config import Settings, get_settings
+from delphi.config import Settings
 from delphi.evidence import offline_evidence, search
-from delphi.panel import forecast as run_forecast, snapshot_at
-from delphi.pooling import clip, logit, sigmoid
+from delphi.panel import forecast as run_forecast
+from delphi.panel import snapshot_at
+from delphi.pooling import logit, sigmoid
 from delphi.providers import build_provider
 from delphi.schemas import Forecast, Question
 
@@ -34,7 +34,7 @@ ANCHOR_LOW, ANCHOR_HIGH = 0.15, 0.85
 
 
 def load_questions(split: str | None = None, limit: int = 0) -> list[Question]:
-    rows = [json.loads(l) for l in QUESTIONS.read_text(encoding="utf-8").splitlines() if l]
+    rows = [json.loads(line) for line in QUESTIONS.read_text(encoding="utf-8").splitlines() if line]
     qs, extra = [], {}
     for r in rows:
         extra[r["id"]] = {"market_p": r.get("market_p")}
@@ -99,8 +99,8 @@ def save(rows: list[Forecast], name: str) -> Path:
 
 def load(name: str) -> list[Forecast]:
     p = RUNS / f"{name}.jsonl"
-    return [Forecast(**json.loads(l)) for l in p.read_text(encoding="utf-8").splitlines()
-            if l]
+    return [Forecast(**json.loads(line))
+            for line in p.read_text(encoding="utf-8").splitlines() if line]
 
 
 # ----------------------------------------------------------------------------
@@ -346,7 +346,7 @@ def persona_table(runs: dict[str, list[Forecast]], qs: list[Question],
             base = ps
             print(f"{name:<12}{M.brier(ps, ys):>9.4f}{spread:>9.3f}{'--':>22}")
             continue
-        diff = sum(abs(a - b) for a, b in zip(ps, base)) / len(ps)
+        diff = sum(abs(a - b) for a, b in zip(ps, base, strict=True)) / len(ps)
         print(f"{name:<12}{M.brier(ps, ys):>9.4f}{spread:>9.3f}{diff:>22.4f}   "
               + M.fmt_delta(M.paired_bootstrap(ps, base, ys, trials=4000)))
 

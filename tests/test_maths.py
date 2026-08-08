@@ -10,7 +10,9 @@ from __future__ import annotations
 import math
 
 import pytest
-from hypothesis import given, settings as hyp_settings, strategies as st
+from hypothesis import given
+from hypothesis import settings as hyp_settings
+from hypothesis import strategies as st
 
 from delphi import pooling as P
 from delphi.abstain import choose, curve

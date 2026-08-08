@@ -55,7 +55,7 @@ def pool(probs: list[float], weights: list[float] | None = None) -> float:
     total = sum(weights)
     if total <= 0:
         raise ValueError("weights sum to zero")
-    z = sum(w * logit(p) for w, p in zip(weights, probs)) / total
+    z = sum(w * logit(p) for w, p in zip(weights, probs, strict=True)) / total
     return sigmoid(z)
 
 

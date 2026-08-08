@@ -80,8 +80,9 @@ def test_the_cache_key_separates_the_arms(settings):
     still miss each other's cache, or their latency, cost and retry behaviour depend on which
     ran first and the measured difference between them is partly execution order."""
     people = make_personas(settings)
-    base = dict(question=Q, persona=people[0], agent_id="a0", round=0, prev=None,
-                peers=[], anchor=None, evidence=None, premortem=False)
+    base = {"question": Q, "persona": people[0], "agent_id": "a0", "round": 0,
+            "prev": None, "peers": [], "anchor": None, "evidence": None,
+            "premortem": False}
     k1 = key_of(Ask(**base, arm="panel"), "m", 7)
     k2 = key_of(Ask(**base, arm="evidence"), "m", 7)
     k3 = key_of(Ask(**base, arm="panel"), "m", 7)
@@ -108,6 +109,7 @@ def test_a_cache_hit_is_billed_at_zero_and_flagged(settings):
 
 def test_a_failed_call_is_never_cached(settings):
     import fakeredis
+
     from delphi.providers import Usage
     from delphi.schemas import AgentVerdict
     people = make_personas(settings)

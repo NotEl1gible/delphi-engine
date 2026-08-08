@@ -54,12 +54,13 @@ def forecast_task(self, question: dict, arm: str = "panel", anchor: float | None
     start-up -- never drags in the model stack. A web process that cannot start because a
     worker dependency is missing is an outage caused by an import.
     """
-    from .panel import forecast as run_forecast, load_or_identity
+    from . import tracing as tracing_mod
+    from .cache import build_cache
+    from .evidence import offline_evidence, search
+    from .panel import forecast as run_forecast
+    from .panel import load_or_identity
     from .providers import build_provider
     from .schemas import Question
-    from .evidence import offline_evidence, search
-    from .cache import build_cache
-    from . import tracing as tracing_mod
 
     s = get_settings(**(overrides or {}))
     q = Question(**question)

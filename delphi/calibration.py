@@ -22,14 +22,14 @@ import json
 import math
 from pathlib import Path
 
-from .pooling import EPS, clip, logit, sigmoid
+from .pooling import clip, logit, sigmoid
 
 
 def log_loss(ps: list[float], ys: list[int]) -> float:
     if not ps:
         return 0.0
     return -sum(y * math.log(clip(p)) + (1 - y) * math.log(1 - clip(p))
-                for p, y in zip(ps, ys)) / len(ps)
+                for p, y in zip(ps, ys, strict=True)) / len(ps)
 
 
 class Calibrator:
@@ -75,7 +75,7 @@ class Platt(Calibrator):
         return {"kind": self.kind, "a": self.a, "b": self.b, "clamped": self.clamped}
 
     @classmethod
-    def fit(cls, ps: list[float], ys: list[int]) -> "Platt":
+    def fit(cls, ps: list[float], ys: list[int]) -> Platt:
         if len(set(ys)) < 2:
             # One class only. Any A/B pair can drive the loss to zero by predicting the
             # constant, which is a fit to the split rather than to the world.
@@ -90,7 +90,7 @@ class Platt(Calibrator):
             a = math.exp(log_a)
             nll = -sum(y * math.log(clip(sigmoid(a * z + b)))
                        + (1 - y) * math.log(1 - clip(sigmoid(a * z + b)))
-                       for z, y in zip(zs, ys)) / n
+                       for z, y in zip(zs, ys, strict=True)) / n
             penalty = (log_a ** 2) / (2 * cls.PRIOR_LOG_A_SD ** 2) \
                 + (b ** 2) / (2 * cls.PRIOR_B_SD ** 2)
             return nll + penalty / n
@@ -159,10 +159,10 @@ class Isotonic(Calibrator):
         return {"kind": self.kind, "xs": self.xs, "ys": self.ys}
 
     @classmethod
-    def fit(cls, ps: list[float], ys: list[int]) -> "Isotonic":
+    def fit(cls, ps: list[float], ys: list[int]) -> Isotonic:
         if not ps:
             return cls([], [])
-        pairs = sorted(zip((clip(p) for p in ps), (float(y) for y in ys)))
+        pairs = sorted(zip([clip(p) for p in ps], [float(y) for y in ys], strict=True))
         xs = [p for p, _ in pairs]
         # pool-adjacent-violators: merge any block whose mean breaks monotonicity
         blocks: list[list[float]] = []          # [sum, count, right_edge_index]

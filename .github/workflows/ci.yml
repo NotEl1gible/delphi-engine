@@ -1,0 +1,147 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+env:
+  PYTHONPATH: .
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Everything that needs no key, no network and no containers. The deterministic
+  # provider stands in for the model, fakeredis for Redis, SQLite for Postgres,
+  # Celery runs eager and the OTel exporter is in memory.
+  unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install --upgrade pip && pip install -r requirements-dev.txt
+
+      - name: lint and type-check
+        run: |
+          ruff check delphi evals tests
+          mypy delphi --ignore-missing-imports --no-strict-optional || true
+
+      - name: tests
+        run: pytest -q
+
+      - name: the question set must reproduce from its own filter
+        run: |
+          python - <<'PY'
+          import json, pathlib
+          rows = [json.loads(l) for l in
+                  pathlib.Path("evals/questions.jsonl").read_text().splitlines() if l]
+          assert len(rows) == 32, len(rows)
+          yes = sum(r["outcome"] for r in rows)
+          assert yes == len(rows) - yes, f"the set is unbalanced: {yes} YES of {len(rows)}"
+          for split in ("dev", "test"):
+              sub = [r for r in rows if r["split"] == split]
+              k = sum(r["outcome"] for r in sub)
+              assert k * 2 == len(sub), f"{split} is unbalanced"
+          dev = max(r["resolution_date"] for r in rows if r["split"] == "dev")
+          test = min(r["resolution_date"] for r in rows if r["split"] == "test")
+          assert dev <= test, "the split is not temporal; the calibrator can see the future"
+          print(f"{len(rows)} questions, {yes} YES, dev ends {dev}, test starts {test}")
+          PY
+
+      - name: the full pipeline on the deterministic provider, with its gates
+        run: |
+          python -m delphi.cli forecast "Will CI pass?" --date 2026-12-31
+          python -m delphi.cli questions
+          python -m delphi.cli ablate --quiet
+          python -m delphi.cli anchor --quiet
+          python -m delphi.cli conform --quiet
+          python -m delphi.cli personas --quiet
+          python -m delphi.cli calibrate
+
+  # ---------------------------------------------------------------------------
+  # The claims the unit job cannot make. SQLAlchemy compiles BIGSERIAL, JSONB and
+  # TIMESTAMPTZ with no server present, and fakeredis accepts commands a real
+  # Redis may reject -- so this is where the store, the cache and a live worker
+  # meet the actual software.
+  integration:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: delphi
+          POSTGRES_PASSWORD: delphi
+          POSTGRES_DB: delphi
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U delphi"
+          --health-interval 5s --health-timeout 3s --health-retries 20
+      redis:
+        image: redis:7
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s --health-timeout 3s --health-retries 20
+    env:
+      DELPHI_TEST_POSTGRES_URL: postgresql+psycopg://delphi:delphi@localhost:5432/delphi
+      DELPHI_TEST_REDIS_URL: redis://localhost:6379/0
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install --upgrade pip && pip install -r requirements-dev.txt
+
+      - name: schema, cache and a live worker against the real services
+        run: pytest tests/test_integration.py -q -p no:randomly
+
+      - name: a real Celery worker drains a real queue
+        run: |
+          celery -A delphi.tasks worker --loglevel=warning --concurrency=1 &
+          sleep 8
+          DELPHI_CELERY_EAGER=false DELPHI_PROVIDER=mock \
+          DELPHI_CELERY_BROKER_URL=redis://localhost:6379/1 \
+          DELPHI_CELERY_RESULT_BACKEND=redis://localhost:6379/2 \
+          python - <<'PY'
+          from delphi.schemas import Question
+          from delphi.tasks import forecast_task
+          import json
+          q = Question(id="Q-ci", text="Will the worker answer?",
+                       resolution_date="2026-12-31", split="live")
+          out = json.loads(forecast_task.apply(
+              args=[q.model_dump(), "panel", None, False, "designed", False,
+                    {"provider": "mock", "cache_enabled": False}]).get())
+          assert out["question_id"] == "Q-ci"
+          print("worker returned", out["decision"], out["p_raw"])
+          PY
+
+  # ---------------------------------------------------------------------------
+  # Docker is not installed on the machine this repository was written on, so the
+  # container layer is proved here or nowhere.
+  container:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: the compose file is valid
+        run: docker compose config --quiet
+      - name: the image builds
+        run: docker build -t delphi-engine:ci .
+      - name: the image serves /health
+        run: |
+          docker run -d --name delphi -p 8000:8000 \
+            -e DELPHI_PROVIDER=mock -e DELPHI_CELERY_EAGER=true \
+            -e DELPHI_CACHE_ENABLED=false delphi-engine:ci
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:8000/health; then ok=1; break; fi
+            sleep 2
+          done
+          test "${ok:-0}" = "1" || (docker logs delphi && exit 1)
+          curl -sf -X POST http://localhost:8000/forecast \
+            -H 'content-type: application/json' \
+            -d '{"question":"Will the container answer?","resolution_date":"2026-12-31"}' \
+            | head -c 400
+          docker rm -f delphi
