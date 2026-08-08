@@ -70,6 +70,11 @@ class RoundSnapshot(BaseModel):
     pooled: float
     spread: float
     movement: float | None = None
+    # The premortem is a separate stage, not another feedback round. Flagged rather than
+    # numbered so that "after N rounds of feedback" means one thing regardless of when the
+    # panel happened to stop -- otherwise the ablation's round-3 arm would silently be the
+    # premortem on questions that settled early and a real third round on the rest.
+    premortem: bool = False
     probabilities: list[float] = Field(default_factory=list)
     tokens_in: int = 0
     tokens_out: int = 0
