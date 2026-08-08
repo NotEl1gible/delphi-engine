@@ -96,28 +96,30 @@ jobs:
           cache: pip
       - run: pip install --upgrade pip && pip install -r requirements-dev.txt
 
-      - name: schema, cache and a live worker against the real services
-        run: pytest tests/test_integration.py -q -p no:randomly
+      - name: the schema and the cache against the real services
+        run: pytest tests/test_integration.py -q
 
+      # The worker starts BEFORE the test that enqueues, which is the bug that made the
+      # first version of this job fail: apply_async against a broker with nothing behind it
+      # is not a broker test, it is a timeout. Both processes are given the same broker
+      # explicitly rather than inheriting a default, so a mismatch fails loudly here instead
+      # of silently in production.
       - name: a real Celery worker drains a real queue
+        env:
+          DELPHI_PROVIDER: mock
+          DELPHI_CACHE_ENABLED: "false"
+          DELPHI_CELERY_EAGER: "false"
+          DELPHI_CELERY_BROKER_URL: redis://localhost:6379/1
+          DELPHI_CELERY_RESULT_BACKEND: redis://localhost:6379/1
+          DELPHI_TEST_BROKER_URL: redis://localhost:6379/1
         run: |
-          celery -A delphi.tasks worker --loglevel=warning --concurrency=1 &
-          sleep 8
-          DELPHI_CELERY_EAGER=false DELPHI_PROVIDER=mock \
-          DELPHI_CELERY_BROKER_URL=redis://localhost:6379/1 \
-          DELPHI_CELERY_RESULT_BACKEND=redis://localhost:6379/2 \
-          python - <<'PY'
-          from delphi.schemas import Question
-          from delphi.tasks import forecast_task
-          import json
-          q = Question(id="Q-ci", text="Will the worker answer?",
-                       resolution_date="2026-12-31", split="live")
-          out = json.loads(forecast_task.apply(
-              args=[q.model_dump(), "panel", None, False, "designed", False,
-                    {"provider": "mock", "cache_enabled": False}]).get())
-          assert out["question_id"] == "Q-ci"
-          print("worker returned", out["decision"], out["p_raw"])
-          PY
+          celery -A delphi.tasks worker --loglevel=info --concurrency=1 \
+            --logfile=worker.log --detach --pidfile=worker.pid
+          for i in $(seq 1 30); do
+            celery -A delphi.tasks inspect ping --timeout 3 && break || sleep 2
+          done
+          pytest tests/test_integration.py -q -k worker || (cat worker.log && exit 1)
+          test -f worker.pid && kill "$(cat worker.pid)" || true
 
   # ---------------------------------------------------------------------------
   # Docker is not installed on the machine this repository was written on, so the

@@ -22,9 +22,13 @@ from delphi.schemas import Question
 
 PG = os.environ.get("DELPHI_TEST_POSTGRES_URL", "")
 RD = os.environ.get("DELPHI_TEST_REDIS_URL", "")
+# A broker with no worker behind it is not a broker test, it is a 120-second timeout. Set
+# only by the CI step that has actually started a worker first.
+BROKER = os.environ.get("DELPHI_TEST_BROKER_URL", "")
 
 pg_only = pytest.mark.skipif(not PG, reason="no DELPHI_TEST_POSTGRES_URL")
 redis_only = pytest.mark.skipif(not RD, reason="no DELPHI_TEST_REDIS_URL")
+worker_only = pytest.mark.skipif(not BROKER, reason="no live worker (DELPHI_TEST_BROKER_URL)")
 
 Q = Question(id="Q-int", text="Will the integration job pass?", resolution_date="2026-09-01",
              outcome=1, split="dev")
@@ -67,22 +71,27 @@ def test_a_real_redis_stores_and_expires_the_cache():
     assert got is not None and got[1].cached is True and got[1].usd == 0.0
 
 
-@redis_only
+@worker_only
 def test_a_real_celery_worker_runs_the_task_through_the_broker():
-    """Eager mode never touches the broker, so it cannot catch a task that fails to
-    serialise, a queue name that does not match, or a worker that cannot import its own
-    module. This is the only place those are exercised."""
+    """The round trip that eager mode cannot make.
+
+    Eager mode never touches the broker, so it cannot catch a task that fails to serialise, a
+    queue name that does not match, or a worker that cannot import its own module. `.apply()`
+    has the same blind spot -- it runs the function locally and returns, which looks like a
+    passing worker test and is not one. Only `apply_async` against a running worker exercises
+    any of it, which is why this test refuses to run unless one was started.
+    """
     import json
 
     from delphi.tasks import build_app, forecast_task
-    s = get_settings(provider="mock", cache_enabled=False, celery_eager=False,
-                     celery_broker_url=RD, celery_result_backend=RD)
-    app = build_app(s)
-    forecast_task.bind(app)
+
+    app = build_app(get_settings(provider="mock", cache_enabled=False, celery_eager=False,
+                                 celery_broker_url=BROKER, celery_result_backend=BROKER))
     res = forecast_task.apply_async(
         args=[Q.model_dump(), "panel", None, False, "designed", False,
-              {"provider": "mock", "cache_enabled": False}], queue="celery")
-    out = json.loads(res.get(timeout=120))
+              {"provider": "mock", "cache_enabled": False}],
+        queue="celery", app=app)
+    out = json.loads(res.get(timeout=180))
     assert out["question_id"] == "Q-int"
     assert out["decision"] in ("forecast", "abstain")
 
