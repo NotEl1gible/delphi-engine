@@ -83,14 +83,23 @@ def test_a_real_celery_worker_runs_the_task_through_the_broker():
     """
     import json
 
-    from delphi.tasks import build_app, forecast_task
+    from delphi.tasks import app as celery_app
+    from delphi.tasks import forecast_task
 
-    app = build_app(get_settings(provider="mock", cache_enabled=False, celery_eager=False,
-                                 celery_broker_url=BROKER, celery_result_backend=BROKER))
+    # The task is already registered on the module-level app, which reads its broker from
+    # the environment -- the same environment the worker was started in. Passing an app to
+    # apply_async does not rebind anything: `app` is not one of its parameters, so Celery
+    # treats it as a task option and tries to JSON-serialise the Celery object itself.
+    assert celery_app.conf.broker_url == BROKER, (
+        f"the test would enqueue to {celery_app.conf.broker_url} while the worker listens "
+        f"on {BROKER}")
+    # Without this the test passes by running the task in-process and never touching Redis,
+    # which is exactly the blind spot it exists to close.
+    assert not celery_app.conf.task_always_eager, "eager mode bypasses the broker entirely"
+
     res = forecast_task.apply_async(
         args=[Q.model_dump(), "panel", None, False, "designed", False,
-              {"provider": "mock", "cache_enabled": False}],
-        queue="celery", app=app)
+              {"provider": "mock", "cache_enabled": False}], queue="celery")
     out = json.loads(res.get(timeout=180))
     assert out["question_id"] == "Q-int"
     assert out["decision"] in ("forecast", "abstain")

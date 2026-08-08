@@ -116,8 +116,10 @@ jobs:
           celery -A delphi.tasks worker --loglevel=info --concurrency=1 \
             --logfile=worker.log --detach --pidfile=worker.pid
           for i in $(seq 1 30); do
-            celery -A delphi.tasks inspect ping --timeout 3 && break || sleep 2
+            celery -A delphi.tasks inspect ping --timeout 3 >/dev/null 2>&1 && break
+            sleep 2
           done
+          celery -A delphi.tasks inspect ping --timeout 5
           pytest tests/test_integration.py -q -k worker || (cat worker.log && exit 1)
           test -f worker.pid && kill "$(cat worker.pid)" || true
 
